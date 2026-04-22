@@ -210,7 +210,7 @@ class EnrichmentCompletedData(CamelModel):
     session_id: str
     status: str
     secure_url: str
-    secure_url_expires_at_utc: datetime | None = None
+    expires_at_utc: datetime | None = None
     state: str | None = None
 
 

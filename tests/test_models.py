@@ -543,7 +543,7 @@ class TestEnrichmentCompletedData:
             "sessionId": "sess-001",
             "status": "completed",
             "secureUrl": "https://id.tic.io/enrichment/data/token-abc",
-            "secureUrlExpiresAtUtc": "2026-06-15T12:30:00Z",
+            "expiresAtUtc": "2026-06-15T12:30:00Z",
             "state": "my-state",
         }
         result = EnrichmentCompletedData.from_api(data)
@@ -551,7 +551,7 @@ class TestEnrichmentCompletedData:
         assert result.session_id == "sess-001"
         assert result.secure_url == "https://id.tic.io/enrichment/data/token-abc"
         assert result.state == "my-state"
-        assert result.secure_url_expires_at_utc is not None
+        assert result.expires_at_utc is not None
 
     def test_from_api_minimal(self):
         data = {
@@ -562,7 +562,7 @@ class TestEnrichmentCompletedData:
         }
         result = EnrichmentCompletedData.from_api(data)
         assert result.state is None
-        assert result.secure_url_expires_at_utc is None
+        assert result.expires_at_utc is None
 
 
 # ---------------------------------------------------------------------------

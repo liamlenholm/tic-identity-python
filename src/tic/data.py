@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 
 
+from pydantic import Field
+
 from .models import CamelModel
 
 
@@ -116,7 +118,7 @@ class CompanyLookupData(CamelModel):
     activity_status: str  # HasNeverBeenActive | IsActive | IsNoLongerActive | Unknown
     last_status: LastStatus | None = None
     registered_address: Address | None = None
-    is_registered_for_vat: bool | None = None
+    is_registered_for_vat: bool | None = Field(None, alias="isRegisteredForVAT")
     is_registered_for_f_tax: bool | None = None
     is_registered_for_payroll: bool | None = None
     sni_codes_2025: list[SniCode] | None = None

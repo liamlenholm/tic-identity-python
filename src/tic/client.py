@@ -14,7 +14,6 @@ from .data import (
 from .enrichment import (
     EnrichmentData,
     EnrichmentResponse,
-    EnrichmentTypeInfo,
     EnrichmentTypesResponse,
 )
 from .exceptions import TicAPIError

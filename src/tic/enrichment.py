@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator
 
 from .data import SigningAuthorityAnalysis
 from .models import CamelModel
@@ -31,6 +32,13 @@ class EnrichmentType(StrEnum):
     FULL = "Full"
 
 
+def _normalize_enrichment_status(v: object) -> object:
+    if isinstance(v, str):
+        mapping = {s.lower(): s for s in EnrichmentStatus}
+        return mapping.get(v.lower(), v)
+    return v
+
+
 # ---------------------------------------------------------------------------
 # Request / Response models
 # ---------------------------------------------------------------------------
@@ -39,9 +47,10 @@ class EnrichmentType(StrEnum):
 class EnrichmentResponse(CamelModel):
     enrichment_id: str
     session_id: str
-    status: EnrichmentStatus
+    status: Annotated[EnrichmentStatus, BeforeValidator(_normalize_enrichment_status)]
     requested_types: list[str]
-    completed_types: list[str]
+    completed_types: list[str] = []
+    error: str | None = None
     secure_url: str | None = None
     secure_url_expires_at_utc: datetime | None = None
 
@@ -50,6 +59,11 @@ class EnrichmentTypeInfo(CamelModel):
     type: str
     description: str
     enabled: bool
+
+
+class EnrichmentTypesResponse(CamelModel):
+    types: list[EnrichmentTypeInfo] = []
+    enabled: bool = False
 
 
 # ---------------------------------------------------------------------------

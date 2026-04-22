@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tic-identity-python"
-version = "0.1.0"
+version = "0.2.0"
 description = "Unofficial Python client for TIC Identity (id.tic.io) — BankID authentication and digital signing"
 readme = "README.md"
 requires-python = ">=3.11"

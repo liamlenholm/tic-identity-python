@@ -259,14 +259,15 @@ class TestExtend:
             return_value=httpx.Response(
                 200,
                 json={
-                    "success": True,
+                    "extended": True,
                     "newExpiresAt": "2026-06-15T12:10:00Z",
+                    "sessionExpiresInSeconds": 586,
                 },
             ),
         )
         ext = await client.extend("sess-100")
         assert isinstance(ext, ExtendResult)
-        assert ext.success is True
+        assert ext.extended is True
         assert ext.new_expires_at is not None
 
 

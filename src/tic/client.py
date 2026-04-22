@@ -14,7 +14,7 @@ from .data import (
 from .enrichment import (
     EnrichmentData,
     EnrichmentResponse,
-    EnrichmentTypeInfo,
+    EnrichmentTypesResponse,
 )
 from .exceptions import TicAPIError
 from .models import (
@@ -22,7 +22,7 @@ from .models import (
     AuthStartRequest,
     CollectResult,
     ExtendResult,
-    LocalizedMessage,
+    MessagesResponse,
     QRCodeResult,
     SessionStatus,
     SignStartRequest,
@@ -222,13 +222,11 @@ class TicClient:
 
     # --- Messages ---
 
-    async def get_messages(self, language: str = "sv") -> list[LocalizedMessage]:
+    async def get_messages(self, language: str = "sv") -> MessagesResponse:
         data = await self._request(
             "GET", "/api/v1/messages", params={"language": language}
         )
-        if isinstance(data, list):
-            return [LocalizedMessage.from_api(m) for m in data]
-        return [LocalizedMessage.from_api(m) for m in data.get("messages", [])]
+        return MessagesResponse.from_api(data)
 
     # --- Enrichment ---
 
@@ -252,10 +250,9 @@ class TicClient:
         data = await self._request("GET", f"/api/v1/enrichment/{enrichment_id}/status")
         return EnrichmentResponse.from_api(data)
 
-    async def get_enrichment_types(self) -> list[EnrichmentTypeInfo]:
+    async def get_enrichment_types(self) -> EnrichmentTypesResponse:
         data = await self._request("GET", "/api/v1/enrichment/types")
-        items = data if isinstance(data, list) else data.get("types", [])
-        return [EnrichmentTypeInfo.from_api(t) for t in items]
+        return EnrichmentTypesResponse.from_api(data)
 
     async def get_enrichment_data(self, token: str) -> EnrichmentData:
         data = await self._request("GET", f"/api/v1/enrichment/data/{token}")

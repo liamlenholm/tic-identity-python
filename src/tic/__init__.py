@@ -1,6 +1,6 @@
 """TIC Identity Python client — BankID authentication and digital signing via id.tic.io."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from .client import RateLimitInfo, TicClient
 from .constants import (
@@ -26,6 +26,7 @@ from .enrichment import (
     EnrichmentStatus,
     EnrichmentType,
     EnrichmentTypeInfo,
+    EnrichmentTypesResponse,
     SparData,
 )
 from .exceptions import TicAPIError, TicError, TicHubError, TicWebhookError
@@ -42,9 +43,11 @@ from .models import (
     EnrichmentFailedData,
     ExtendResult,
     Failed,
+    HintCodeMapping,
     IpInfo,
     IpIntelligence,
     LocalizedMessage,
+    MessagesResponse,
     OrderRegenerated,
     QRCodeResult,
     RiskAssessment,
@@ -55,6 +58,7 @@ from .models import (
     StatusChanged,
     SubscribeResponse,
     TimeoutWarning,
+    UsageLimits,
     UsageStats,
     User,
     WebhookPayload,
@@ -89,9 +93,12 @@ __all__ = [
     "QRCodeResult",
     "SessionStatus",
     "SignStartRequest",
+    "UsageLimits",
     "UsageStats",
     "User",
     "Signature",
+    "HintCodeMapping",
+    "MessagesResponse",
     "LocalizedMessage",
     # Hub models
     "AuthStatusResponse",
@@ -124,6 +131,7 @@ __all__ = [
     "EnrichmentStatus",
     "EnrichmentType",
     "EnrichmentTypeInfo",
+    "EnrichmentTypesResponse",
     "SparData",
     # Data Verification
     "CompanyCreditData",

@@ -47,7 +47,7 @@ class TestCompanyLookupResponse:
                     "city": "Stockholm",
                     "countryCode": "SWE",
                 },
-                "isRegisteredForVat": True,
+                "isRegisteredForVAT": True,
                 "isRegisteredForFTax": True,
                 "isRegisteredForPayroll": True,
                 "sniCodes2025": [
@@ -190,7 +190,7 @@ class TestCompanyLookupResponse:
                 "companyId": 22222,
                 "registrationNumber": "5590000002",
                 "activityStatus": "IsActive",
-                "isRegisteredForVat": True,
+                "isRegisteredForVAT": True,
             },
         }
         resp = CompanyLookupResponse.from_api(data)

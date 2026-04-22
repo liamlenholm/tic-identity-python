@@ -309,18 +309,20 @@ class TestQRCodeResult:
 class TestExtendResult:
     def test_from_api_success(self):
         data = {
-            "success": True,
+            "extended": True,
             "newExpiresAt": "2026-06-15T12:10:00Z",
+            "sessionExpiresInSeconds": 586,
         }
         ext = ExtendResult.from_api(data)
-        assert ext.success is True
+        assert ext.extended is True
         assert ext.error is None
         assert ext.new_expires_at is not None
+        assert ext.session_expires_in_seconds == 586
 
     def test_from_api_failure(self):
-        data = {"success": False, "error": "Session cannot be extended"}
+        data = {"extended": False, "error": "Session cannot be extended"}
         ext = ExtendResult.from_api(data)
-        assert ext.success is False
+        assert ext.extended is False
         assert ext.error == "Session cannot be extended"
         assert ext.new_expires_at is None
 
@@ -419,19 +421,27 @@ class TestIpIntelligence:
                 "isTor": False,
                 "isLikelyVpn": False,
             },
-            "risk": {"level": "low", "score": 10},
+            "deviceIp": {
+                "ipAddress": "5.6.7.8",
+                "countryCode": "SE",
+                "isTor": False,
+                "isLikelyVpn": False,
+            },
+            "overallRisk": {"level": "low", "score": 10, "indicators": []},
         }
         intel = IpIntelligence.from_api(data)
         assert intel.initiating_ip is not None
         assert intel.initiating_ip.ip_address == "1.2.3.4"
-        assert intel.risk is not None
-        assert intel.risk.level == "low"
-        assert intel.risk.score == 10
+        assert intel.device_ip is not None
+        assert intel.device_ip.ip_address == "5.6.7.8"
+        assert intel.overall_risk is not None
+        assert intel.overall_risk.level == "low"
+        assert intel.overall_risk.score == 10
 
     def test_from_api_none_fields(self):
         intel = IpIntelligence.from_api({})
         assert intel.initiating_ip is None
-        assert intel.risk is None
+        assert intel.overall_risk is None
 
 
 # ---------------------------------------------------------------------------
@@ -469,13 +479,13 @@ class TestAuthCompletedData:
             },
             "ipIntelligence": {
                 "initiatingIp": {"ipAddress": "203.0.113.42", "countryCode": "SE"},
-                "risk": {"level": "low", "score": 5},
+                "overallRisk": {"level": "low", "score": 5, "indicators": []},
             },
         }
         result = AuthCompletedData.from_api(data)
         assert result.ip_intelligence is not None
         assert result.ip_intelligence.initiating_ip.ip_address == "203.0.113.42"
-        assert result.ip_intelligence.risk.level == "low"
+        assert result.ip_intelligence.overall_risk.level == "low"
 
 
 # ---------------------------------------------------------------------------
@@ -513,12 +523,12 @@ class TestSignCompletedData:
             "signature": {"value": "sig-val", "ocspResponse": "ocsp-val"},
             "ipIntelligence": {
                 "initiatingIp": {"ipAddress": "10.0.0.1"},
-                "risk": {"level": "high", "score": 85},
+                "overallRisk": {"level": "high", "score": 85, "indicators": []},
             },
         }
         result = SignCompletedData.from_api(data)
         assert result.ip_intelligence is not None
-        assert result.ip_intelligence.risk.score == 85
+        assert result.ip_intelligence.overall_risk.score == 85
 
 
 # ---------------------------------------------------------------------------
@@ -533,7 +543,7 @@ class TestEnrichmentCompletedData:
             "sessionId": "sess-001",
             "status": "completed",
             "secureUrl": "https://id.tic.io/enrichment/data/token-abc",
-            "secureUrlExpiresAtUtc": "2026-06-15T12:30:00Z",
+            "expiresAtUtc": "2026-06-15T12:30:00Z",
             "state": "my-state",
         }
         result = EnrichmentCompletedData.from_api(data)
@@ -541,7 +551,7 @@ class TestEnrichmentCompletedData:
         assert result.session_id == "sess-001"
         assert result.secure_url == "https://id.tic.io/enrichment/data/token-abc"
         assert result.state == "my-state"
-        assert result.secure_url_expires_at_utc is not None
+        assert result.expires_at_utc is not None
 
     def test_from_api_minimal(self):
         data = {
@@ -552,7 +562,7 @@ class TestEnrichmentCompletedData:
         }
         result = EnrichmentCompletedData.from_api(data)
         assert result.state is None
-        assert result.secure_url_expires_at_utc is None
+        assert result.expires_at_utc is None
 
 
 # ---------------------------------------------------------------------------

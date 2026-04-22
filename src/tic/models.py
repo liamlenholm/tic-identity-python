@@ -56,6 +56,8 @@ class User(CamelModel):
     given_name: str
     surname: str
     name: str | None = None
+    external_subject_id: str | None = None
+    provider: str | None = None
 
 
 class Signature(CamelModel):
@@ -88,12 +90,20 @@ class SessionStatus(CamelModel):
 class QRCodeResult(CamelModel):
     qr_data: str
     valid_for_seconds: int
+    order_age: int | None = None
 
 
 class ExtendResult(CamelModel):
-    success: bool
+    extended: bool
     error: str | None = None
     new_expires_at: datetime | None = None
+    session_expires_in_seconds: int | None = None
+
+
+class UsageLimits(CamelModel):
+    authentications_per_month: int | None = None
+    signings_per_month: int | None = None
+    enrichments_per_month: int | None = None
 
 
 class UsageStats(CamelModel):
@@ -106,6 +116,9 @@ class UsageStats(CamelModel):
     signings_started: int | None = None
     signings_completed: int | None = None
     signings_failed: int | None = None
+    enrichments_requested: int | None = None
+    enrichments_delivered: int | None = None
+    limits: UsageLimits | None = None
 
 
 # --- SignalR hub event models ---
@@ -197,7 +210,7 @@ class EnrichmentCompletedData(CamelModel):
     session_id: str
     status: str
     secure_url: str
-    secure_url_expires_at_utc: datetime | None = None
+    expires_at_utc: datetime | None = None
     state: str | None = None
 
 
@@ -215,23 +228,42 @@ class EnrichmentFailedData(CamelModel):
 class IpInfo(CamelModel):
     ip_address: str
     country_code: str | None = None
+    country_name: str | None = None
+    isp: str | None = None
+    usage_type: str | None = None
     is_tor: bool = False
     is_likely_vpn: bool = False
+    confidence_score: int | None = None
 
 
 class RiskAssessment(CamelModel):
     level: str
     score: int
+    indicators: list[str] = []
 
 
 class IpIntelligence(CamelModel):
     initiating_ip: IpInfo | None = None
-    risk: RiskAssessment | None = None
+    device_ip: IpInfo | None = None
+    overall_risk: RiskAssessment | None = None
+    enriched_at_utc: datetime | None = None
 
 
 # --- Messages ---
 
 
+class HintCodeMapping(CamelModel):
+    rfa: str
+    variants: list[str] = []
+
+
+class MessagesResponse(CamelModel):
+    language: str
+    messages: dict[str, str]
+    hint_code_mapping: dict[str, HintCodeMapping] = {}
+
+
+# Deprecated: use MessagesResponse instead
 class LocalizedMessage(CamelModel):
     hint_code: str
     message: str

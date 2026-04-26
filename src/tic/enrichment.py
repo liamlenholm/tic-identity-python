@@ -127,12 +127,7 @@ class SparData(BaseModel):
 
     Skydd_Sekretessmarkering: bool | None = None
     Skydd_SkyddadFolkbokforing: bool | None = None
-    # The seven `PersonDetaljer_*` fields need explicit aliases — TIC's
-    # server-side C# property name is `Persondetaljer_*` (lowercase
-    # `d`), even though the public docs show `PersonDetaljer_*`.
-    # JsonNamingPolicy.CamelCase therefore emits `persondetaljer_*` on
-    # the wire, which doesn't match what `_csharp_camel("PersonDetaljer_*")`
-    # would produce (`personDetaljer_*`).
+    # Wire sends lowercase `persondetaljer_*`, not `personDetaljer_*`
     PersonDetaljer_Sekretessmarkering: bool | None = Field(
         None, alias="persondetaljer_Sekretessmarkering",
     )

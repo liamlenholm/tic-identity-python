@@ -65,7 +65,6 @@ class TestSignatureScheme:
         secret = "whsec_x"
         ts = str(int(time.time()))
 
-        # The actual scheme: sha256= + HMAC(secret, f"{ts}.{body}")
         msg = f"{ts}.{body.decode()}".encode()
         digest = hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
         sig = f"sha256={digest}"

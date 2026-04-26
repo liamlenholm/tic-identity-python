@@ -8,7 +8,7 @@ from pydantic.alias_generators import to_camel
 
 
 class CamelModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, frozen=True)
 
     def to_api(self) -> dict[str, Any]:
         return self.model_dump(by_alias=True, exclude_none=True)
@@ -181,6 +181,8 @@ class AuthStatusResponse(CamelModel):
 
 
 class WebhookPayload(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     event: str
     timestamp: datetime
     data: dict[str, Any]

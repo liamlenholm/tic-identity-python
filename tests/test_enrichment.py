@@ -9,6 +9,7 @@ from tic.enrichment import (
     EnrichmentResponse,
     EnrichmentStatus,
     EnrichmentType,
+    IncomeData,
     SparData,
 )
 
@@ -123,18 +124,19 @@ class TestEnrichmentResponse:
 
 class TestEnrichmentData:
     def test_from_api_with_spar(self):
+        # Wire format: .NET CamelCase lowercases first char only.
         data = {
             "personalNumber": "199001011234",
             "name": "Anna Svensson",
             "enrichedAtUtc": "2026-06-15T12:00:00Z",
             "spar": {
-                "Person_IdNummer": "199001011234",
-                "Person_PersonIdTyp": "PersonNummer",
-                "Namn_Fornamn": "Anna",
-                "Namn_Efternamn": "Svensson",
-                "Skydd_Sekretessmarkering": False,
-                "Folkbokforingsadress_SvenskAdress_PostNr": "11122",
-                "Folkbokforingsadress_SvenskAdress_Postort": "Stockholm",
+                "person_IdNummer": "199001011234",
+                "person_PersonIdTyp": "PersonNummer",
+                "namn_Fornamn": "Anna",
+                "namn_Efternamn": "Svensson",
+                "skydd_Sekretessmarkering": False,
+                "folkbokforingsadress_SvenskAdress_PostNr": "11122",
+                "folkbokforingsadress_SvenskAdress_Postort": "Stockholm",
             },
         }
         enrichment = EnrichmentData.from_api(data)
@@ -248,6 +250,54 @@ class TestEnrichmentData:
         assert ip.overall_risk.level == "low"
         assert ip.overall_risk.score == 10
 
+    def test_from_api_with_full_wire_ip_intelligence(self):
+        """Wire response shape with full IpData / IpOverallRisk fields.
+
+        Covers fields the public docs omit but the wire returns:
+        ``domain``, ``isWhitelisted``, ``totalReports``,
+        ``distinctReporters`` on IpData and ``requiresReview`` on
+        IpOverallRisk. Uses RFC 5737 TEST-NET-3 addresses and
+        documentation-only domains so no real values leak.
+        """
+        data = {
+            "personalNumber": "199001011234",
+            "ipIntelligence": {
+                "deviceIp": {
+                    "ipAddress": "203.0.113.42",
+                    "countryCode": "SE",
+                    "isp": "Example ISP",
+                    "domain": "example.net",
+                    "usageType": "Fixed Line ISP",
+                    "confidenceScore": 0,
+                    "isTor": False,
+                    "isWhitelisted": False,
+                    "totalReports": 0,
+                    "distinctReporters": 0,
+                    "isLikelyVpn": False,
+                },
+                "overallRisk": {
+                    "level": "low",
+                    "score": 0,
+                    "indicators": [],
+                    "requiresReview": False,
+                },
+                "enrichedAtUtc": "2026-06-15T12:00:00Z",
+            },
+        }
+        enrichment = EnrichmentData.from_api(data)
+        assert enrichment.ip_intelligence is not None
+        device = enrichment.ip_intelligence.device_ip
+        assert device is not None
+        assert device.ip_address == "203.0.113.42"
+        assert device.domain == "example.net"
+        assert device.is_whitelisted is False
+        assert device.total_reports == 0
+        assert device.distinct_reporters == 0
+        assert device.usage_type == "Fixed Line ISP"
+        risk = enrichment.ip_intelligence.overall_risk
+        assert risk is not None
+        assert risk.requires_review is False
+
 
 # ---------------------------------------------------------------------------
 # SparData
@@ -273,3 +323,86 @@ class TestSparData:
         assert spar.Namn_Fornamn is None
         assert spar.Namn_Efternamn is None
         assert spar.Folkbokforingsadress_SvenskAdress_PostNr is None
+
+    def test_from_wire_format_camelcase_first(self):
+        """TIC's .NET server lowercases the first char only.
+
+        Real responses look like ``person_IdNummer`` /
+        ``folkbokforingsadress_SvenskAdress_Postort`` — not the
+        PascalCase form shown in the public docs.
+        """
+        wire_data = {
+            "person_IdNummer": "199001011234",
+            "person_PersonIdTyp": "PERSONNUMMER",
+            "skydd_Sekretessmarkering": False,
+            "skydd_SkyddadFolkbokforing": False,
+            # ``persondetaljer_*`` is lowercase-d on the wire because
+            # TIC's C# property is named ``Persondetaljer_*``. The seven
+            # PersonDetaljer fields need explicit aliases — without them
+            # they silently parse as None.
+            "persondetaljer_Sekretessmarkering": False,
+            "persondetaljer_Kon": "K",
+            "persondetaljer_Fodelsedatum": "1990-01-01T00:00:00",
+            "namn_Fornamn": "Anna",
+            "namn_Efternamn": "Andersson",
+            "namn_Tilltalsnamn": "Anna",
+            "folkbokforing_FolkbokfordLanKod": "01",
+            "folkbokforing_FolkbokfordKommunKod": "0180",
+            "folkbokforingsadress_SvenskAdress_Utdelningsadress1": "Storgatan 1",
+            "folkbokforingsadress_SvenskAdress_PostNr": "11122",
+            "folkbokforingsadress_SvenskAdress_Postort": "Stockholm",
+        }
+        spar = SparData.model_validate(wire_data)
+        assert spar.Person_IdNummer == "199001011234"
+        assert spar.Namn_Fornamn == "Anna"
+        assert spar.Namn_Efternamn == "Andersson"
+        assert spar.Skydd_Sekretessmarkering is False
+        assert spar.PersonDetaljer_Sekretessmarkering is False
+        assert spar.PersonDetaljer_Kon == "K"
+        assert spar.PersonDetaljer_Fodelsedatum == "1990-01-01T00:00:00"
+        assert spar.Folkbokforing_FolkbokfordLanKod == "01"
+        assert spar.Folkbokforingsadress_SvenskAdress_Utdelningsadress1 == "Storgatan 1"
+        assert spar.Folkbokforingsadress_SvenskAdress_PostNr == "11122"
+        assert spar.Folkbokforingsadress_SvenskAdress_Postort == "Stockholm"
+
+
+# ---------------------------------------------------------------------------
+# IncomeData
+# ---------------------------------------------------------------------------
+
+
+class TestIncomeData:
+    def test_from_wire_format_camelcase_first(self):
+        """Skatteverket field names lowercase only the first segment.
+
+        Wire returns ``ar_DEKL`` / ``ink_TJ`` / ``oskott_KAP`` — not
+        the all-caps form shown in the docs.
+        """
+        wire_data = {
+            "ar_DEKL": 2025,
+            "ink_TJ": 546401,
+            "ink_NRV_AKT_TOT": 33966,
+            "ink_NRV_PASS_TOT": 79109,
+            "usk_NRV_AKT_TOT": 0,
+            "usk_NRV_PASS_TOT": 0,
+            "avdr_SALLM": 14000,
+            "ink_TAX_FORV": 532401,
+            "ink_BESK_FORV": 464440,
+            "oskott_KAP": 6069,
+            "uskott_KAP": 0,
+            "sk_SLUT": 163920,
+        }
+        income = IncomeData.model_validate(wire_data)
+        assert income.AR_DEKL == 2025
+        assert income.INK_TJ == 546401
+        assert income.INK_NRV_AKT_TOT == 33966
+        assert income.AVDR_SALLM == 14000
+        assert income.INK_TAX_FORV == 532401
+        assert income.OSKOTT_KAP == 6069
+        assert income.SK_SLUT == 163920
+
+    def test_all_fields_default_to_none(self):
+        income = IncomeData.model_validate({})
+        assert income.AR_DEKL is None
+        assert income.INK_TJ is None
+        assert income.SK_SLUT is None

@@ -169,11 +169,20 @@ class TestWebhookHeader:
     def test_values(self):
         assert WebhookHeader.SIGNATURE == "X-Ormeo-Signature"
         assert WebhookHeader.TIMESTAMP == "X-Ormeo-Timestamp"
-        assert WebhookHeader.EVENT == "X-Ormeo-Event"
         assert WebhookHeader.SESSION_ID == "X-Ormeo-Session-Id"
 
     def test_member_count(self):
-        assert len(WebhookHeader) == 4
+        # Only three headers sent on the wire; the event type lives in
+        # the request body, not a header.
+        assert len(WebhookHeader) == 3
+
+    def test_no_event_header(self):
+        """The event type is in the body, not a header.
+
+        Read it from :attr:`WebhookPayload.event` after
+        :func:`verify_signature`.
+        """
+        assert not hasattr(WebhookHeader, "EVENT")
 
     def test_usable_as_dict_key(self):
         headers = {

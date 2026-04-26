@@ -31,12 +31,16 @@ SAMPLE_PAYLOAD = json.dumps(
 
 
 def _make_signature(payload: str, timestamp: str, secret: str = SECRET) -> str:
-    sign_payload = f"{timestamp}.{payload}"
+    """Build a TIC webhook signature.
+
+    HMAC-SHA256 over ``f"{timestamp}.{payload}"``, hex digest, prefixed
+    with ``sha256=``. Stripe-style.
+    """
     return (
         "sha256="
         + hmac.new(
             secret.encode("utf-8"),
-            sign_payload.encode("utf-8"),
+            f"{timestamp}.{payload}".encode("utf-8"),
             hashlib.sha256,
         ).hexdigest()
     )
@@ -45,6 +49,37 @@ def _make_signature(payload: str, timestamp: str, secret: str = SECRET) -> str:
 # ---------------------------------------------------------------------------
 # Valid signatures
 # ---------------------------------------------------------------------------
+
+
+class TestSignatureScheme:
+    """Pins the TIC webhook signature scheme.
+
+    Stripe-style: the ``X-Ormeo-Signature`` header is ``sha256=<hex>``
+    where ``<hex>`` is HMAC-SHA256 over ``f"{timestamp}.{body}"`` —
+    not the raw body alone. The public C# / JS samples only show the
+    HMAC computation step and don't make this composition clear.
+    """
+
+    def test_signature_is_stripe_style_with_timestamp_prefix(self):
+        body = b'{"event":"auth.completed","timestamp":"2026-06-15T12:00:00Z","data":{"sessionId":"x"}}'
+        secret = "whsec_x"
+        ts = str(int(time.time()))
+
+        msg = f"{ts}.{body.decode()}".encode()
+        digest = hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
+        sig = f"sha256={digest}"
+
+        result = verify_signature(body, ts, sig, secret)
+        assert isinstance(result, WebhookPayload)
+
+    def test_plain_hex_without_prefix_rejected(self):
+        """A bare hex digest without ``sha256=`` is NOT TIC's format."""
+        ts = str(int(time.time()))
+        # Compute the right HMAC but omit the prefix.
+        msg = f"{ts}.{SAMPLE_PAYLOAD}".encode()
+        bare_hex = hmac.new(SECRET.encode(), msg, hashlib.sha256).hexdigest()
+        with pytest.raises(TicWebhookError, match="Invalid signature"):
+            verify_signature(SAMPLE_PAYLOAD, ts, bare_hex, SECRET)
 
 
 class TestValidSignature:
@@ -99,6 +134,7 @@ class TestInvalidSignature:
             verify_signature(tampered, ts, sig, SECRET)
 
     def test_tampered_timestamp(self):
+        """Timestamp is part of the HMAC input, so tampering breaks it."""
         ts = str(int(time.time()))
         sig = _make_signature(SAMPLE_PAYLOAD, ts)
         wrong_ts = str(int(ts) + 1)

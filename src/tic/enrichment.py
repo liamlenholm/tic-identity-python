@@ -4,10 +4,53 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 from .data import SigningAuthorityAnalysis
 from .models import CamelModel
+
+
+def _csharp_camel(field_name: str) -> str:
+    """Match .NET's ``JsonNamingPolicy.CamelCase`` exactly.
+
+    The TIC API server is .NET. System.Text.Json serialises property
+    names by lowercasing the leading run of uppercase letters, but
+    keeps the last uppercase before a lowercase letter as-is (the
+    standard Pascal-to-camel acronym rule). Examples observed on the
+    wire:
+
+    * ``Person_IdNummer`` → ``person_IdNummer`` (single upper, then lower)
+    * ``Folkbokforingsadress_SvenskAdress_CareOf`` → ``folkbokforingsadress_SvenskAdress_CareOf``
+    * ``AR_DEKL`` → ``ar_DEKL`` (all-upper run followed by underscore)
+    * ``INK_NRV_AKT_TOT`` → ``ink_NRV_AKT_TOT``
+    * ``XMLDocument`` → ``xmlDocument`` (acronym rule kicks in at ``D``)
+
+    Used for SPAR / Income field aliases — those models keep field
+    names matching SPAR / Skatteverket column conventions and don't
+    fit pure snake_case ↔ camelCase translation.
+    """
+    if not field_name or not field_name[0].isupper():
+        return field_name
+
+    chars = list(field_name)
+    chars[0] = chars[0].lower()
+
+    n = len(chars)
+    # If the next char isn't uppercase, we're done (e.g. "Person...").
+    if n < 2 or not chars[1].isupper():
+        return "".join(chars)
+
+    # Consecutive uppercase letters at the start: lowercase them, but
+    # if the next-next char is a lowercase letter, stop one early
+    # (acronym rule: XMLDocument → xmlDocument, not xmldocument).
+    i = 1
+    while i < n and chars[i].isupper():
+        if i + 1 < n and chars[i + 1].isalpha() and not chars[i + 1].isupper():
+            break
+        chars[i] = chars[i].lower()
+        i += 1
+
+    return "".join(chars)
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +115,11 @@ class EnrichmentTypesResponse(CamelModel):
 
 
 class SparData(BaseModel):
-    model_config = {"populate_by_name": True}
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=_csharp_camel,
+        frozen=True,
+    )
 
     Person_IdNummer: str | None = None
     Person_PersonIdTyp: str | None = None
@@ -80,7 +127,11 @@ class SparData(BaseModel):
 
     Skydd_Sekretessmarkering: bool | None = None
     Skydd_SkyddadFolkbokforing: bool | None = None
-    PersonDetaljer_Sekretessmarkering: bool | None = None
+    # Wire sends lowercase `persondetaljer_*`, not `personDetaljer_*`
+    PersonDetaljer_Sekretessmarkering: bool | None = Field(
+        None,
+        alias="persondetaljer_Sekretessmarkering",
+    )
 
     Namn_Fornamn: str | None = None
     Namn_Mellannamn: str | None = None
@@ -88,12 +139,27 @@ class SparData(BaseModel):
     Namn_Aviseringsnamn: str | None = None
     Namn_Tilltalsnamn: str | None = None
 
-    PersonDetaljer_Kon: str | None = None
-    PersonDetaljer_Fodelsedatum: str | None = None
-    PersonDetaljer_Avlidendatum: str | None = None
-    PersonDetaljer_Avregistreringsdatum: str | None = None
-    PersonDetaljer_AvregistreringsorsakKod: str | None = None
-    PersonDetaljer_AvregistreringsorsakBeskrivning: str | None = None
+    PersonDetaljer_Kon: str | None = Field(None, alias="persondetaljer_Kon")
+    PersonDetaljer_Fodelsedatum: str | None = Field(
+        None,
+        alias="persondetaljer_Fodelsedatum",
+    )
+    PersonDetaljer_Avlidendatum: str | None = Field(
+        None,
+        alias="persondetaljer_Avlidendatum",
+    )
+    PersonDetaljer_Avregistreringsdatum: str | None = Field(
+        None,
+        alias="persondetaljer_Avregistreringsdatum",
+    )
+    PersonDetaljer_AvregistreringsorsakKod: str | None = Field(
+        None,
+        alias="persondetaljer_AvregistreringsorsakKod",
+    )
+    PersonDetaljer_AvregistreringsorsakBeskrivning: str | None = Field(
+        None,
+        alias="persondetaljer_AvregistreringsorsakBeskrivning",
+    )
 
     Folkbokforing_FolkbokfordLanKod: str | None = None
     Folkbokforing_FolkbokfordKommunKod: str | None = None
@@ -145,7 +211,11 @@ class PropertyOwnershipData(CamelModel):
 
 
 class IncomeData(BaseModel):
-    model_config = {"populate_by_name": True}
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=_csharp_camel,
+        frozen=True,
+    )
 
     AR_DEKL: int | None = None
     INK_TJ: int | None = None
@@ -171,16 +241,21 @@ class IpData(CamelModel):
     country_code: str | None = None
     country_name: str | None = None
     isp: str | None = None
+    domain: str | None = None
     usage_type: str | None = None
     confidence_score: int | None = None
     is_tor: bool = False
     is_likely_vpn: bool = False
+    is_whitelisted: bool = False
+    total_reports: int | None = None
+    distinct_reporters: int | None = None
 
 
 class IpOverallRisk(CamelModel):
     level: str
     score: int
     indicators: list[str] = []
+    requires_review: bool = False
 
 
 class IpIntelligenceData(CamelModel):

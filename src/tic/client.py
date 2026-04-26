@@ -14,6 +14,7 @@ from .data import (
 from .enrichment import (
     EnrichmentData,
     EnrichmentResponse,
+    EnrichmentType,
     EnrichmentTypesResponse,
 )
 from .exceptions import TicAPIError
@@ -233,7 +234,7 @@ class TicClient:
     async def start_enrichment(
         self,
         session_id: str,
-        types: list[str],
+        types: list[EnrichmentType | str],
         *,
         webhook_url: str | None = None,
         state: str | None = None,

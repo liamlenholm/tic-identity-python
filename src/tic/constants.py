@@ -189,16 +189,18 @@ class WebhookEvent(StrEnum):
 
 
 class WebhookHeader(StrEnum):
-    """HTTP header names included in TIC Identity webhook requests."""
+    """HTTP header names included in TIC Identity webhook requests.
+
+    The event type is **not** in a header — it lives in the request
+    body's ``event`` field. Read it from :attr:`WebhookPayload.event`
+    after :func:`verify_signature`.
+    """
 
     SIGNATURE = "X-Ormeo-Signature"
     """HMAC-SHA256 signature of the request body."""
 
     TIMESTAMP = "X-Ormeo-Timestamp"
     """Unix timestamp when the webhook was sent."""
-
-    EVENT = "X-Ormeo-Event"
-    """The webhook event type (e.g. ``enrichment.completed``)."""
 
     SESSION_ID = "X-Ormeo-Session-Id"
     """The session ID associated with the webhook."""

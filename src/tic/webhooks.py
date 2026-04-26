@@ -18,7 +18,6 @@ from .models import (
 
 HEADER_SIGNATURE = WebhookHeader.SIGNATURE
 HEADER_TIMESTAMP = WebhookHeader.TIMESTAMP
-HEADER_EVENT = WebhookHeader.EVENT
 HEADER_SESSION_ID = WebhookHeader.SESSION_ID
 
 

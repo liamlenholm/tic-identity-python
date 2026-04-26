@@ -129,7 +129,8 @@ class SparData(BaseModel):
     Skydd_SkyddadFolkbokforing: bool | None = None
     # Wire sends lowercase `persondetaljer_*`, not `personDetaljer_*`
     PersonDetaljer_Sekretessmarkering: bool | None = Field(
-        None, alias="persondetaljer_Sekretessmarkering",
+        None,
+        alias="persondetaljer_Sekretessmarkering",
     )
 
     Namn_Fornamn: str | None = None
@@ -140,19 +141,24 @@ class SparData(BaseModel):
 
     PersonDetaljer_Kon: str | None = Field(None, alias="persondetaljer_Kon")
     PersonDetaljer_Fodelsedatum: str | None = Field(
-        None, alias="persondetaljer_Fodelsedatum",
+        None,
+        alias="persondetaljer_Fodelsedatum",
     )
     PersonDetaljer_Avlidendatum: str | None = Field(
-        None, alias="persondetaljer_Avlidendatum",
+        None,
+        alias="persondetaljer_Avlidendatum",
     )
     PersonDetaljer_Avregistreringsdatum: str | None = Field(
-        None, alias="persondetaljer_Avregistreringsdatum",
+        None,
+        alias="persondetaljer_Avregistreringsdatum",
     )
     PersonDetaljer_AvregistreringsorsakKod: str | None = Field(
-        None, alias="persondetaljer_AvregistreringsorsakKod",
+        None,
+        alias="persondetaljer_AvregistreringsorsakKod",
     )
     PersonDetaljer_AvregistreringsorsakBeskrivning: str | None = Field(
-        None, alias="persondetaljer_AvregistreringsorsakBeskrivning",
+        None,
+        alias="persondetaljer_AvregistreringsorsakBeskrivning",
     )
 
     Folkbokforing_FolkbokfordLanKod: str | None = None
